@@ -9,6 +9,10 @@ namespace trainer
 // Loads the embedded data lists. `gameError` is empty if game::Init succeeded.
 void Init(const std::string &gameError);
 
+// Called for keys pressed while the menu is closed, and for every key
+// release (GLFW key codes).
+void OnKey(int key, bool down);
+
 // Called every frame, menu open or not, to keep toggled cheats applied.
 void Update();
 

@@ -1,8 +1,12 @@
 #include "trainer.h"
 
+#include <GLFW/glfw3.h>
+
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <utility>
 #include <vector>
 
 #include "data.h"
@@ -96,7 +100,13 @@ bool freezeClock = false;
 int frozenHour = 12;
 int frozenMinute = 0;
 
-bool spawnInside = true;
+bool turbo = false;
+float turboFactor = 1.5f;
+bool turboBoostPending = false;
+bool turboHeld = false;
+bool turboStopPending = false;
+
+bool spawnInside = false;
 int weaponAmmo = 500;
 int moneyInput = 0;
 int wantedLevel = 0;
@@ -271,6 +281,12 @@ void DrawVehiclesTab()
         invulnerableVehicle = nullptr;
     }
 
+    ImGui::Checkbox("Turbo", &turbo);
+    HelpMarker("While driving, press 0 to multiply your vehicle's speed by the factor below and send it the way the "
+               "vehicle is facing. Keep holding it to go on accelerating by that factor every second. P stops you dead.");
+    ImGui::SetNextItemWidth(ImGui::GetFontSize() * 10.0f);
+    ImGui::SliderFloat("Boost factor", &turboFactor, 1.1f, 5.0f, "%.1fx");
+
     ImGui::SeparatorText("Spawn vehicle");
     ImGui::Checkbox("Spawn inside", &spawnInside);
     HelpMarker("Puts you in the driver's seat when spawning on foot. When you're already in a vehicle, the new one is placed in front of you.");
@@ -423,6 +439,19 @@ void Init(const std::string &gameError)
     LoadData();
 }
 
+void OnKey(int key, bool down)
+{
+    if (key == GLFW_KEY_0 || key == GLFW_KEY_KP_0)
+    {
+        turboHeld = down;
+        turboBoostPending |= down;
+    }
+    else if (key == GLFW_KEY_P && down)
+    {
+        turboStopPending = true;
+    }
+}
+
 void Update()
 {
     if (!game::IsInitialised() || game::IsGamePaused())
@@ -452,6 +481,32 @@ void Update()
             game::SetVehicleInvulnerable(veh, true);
             game::VehicleHealth(veh) = std::max(game::VehicleHealth(veh), 1000.0f);
             invulnerableVehicle = veh;
+        }
+    }
+
+    bool boost = std::exchange(turboBoostPending, false);
+    bool stop = std::exchange(turboStopPending, false);
+    if (turbo)
+    {
+        if (void *veh = game::PlayerVehicle())
+        {
+            CVector &speed = game::MoveSpeed(veh);
+            if (stop)
+            {
+                speed = {};
+                game::TurnSpeed(veh) = {};
+            }
+            else if (boost || turboHeld)
+            {
+                // A press boosts at once; holding keeps multiplying by the
+                // factor per second (TimeStep is in 1/50 s). The boosted
+                // speed always points where the vehicle faces, even when
+                // it was sliding or reversing.
+                float factor = boost ? turboFactor : powf(turboFactor, game::TimeStep() / 50.0f);
+                float magnitude = sqrtf(speed.x * speed.x + speed.y * speed.y + speed.z * speed.z) * factor;
+                CVector forward = game::Forward(veh);
+                speed = {forward.x * magnitude, forward.y * magnitude, forward.z * magnitude};
+            }
         }
     }
 }

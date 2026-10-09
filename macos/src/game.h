@@ -25,6 +25,8 @@ bool IsInitialised();
 void *PlayerPed();
 void *PlayerVehicle();
 bool IsGamePaused();
+// Length of the current frame in 1/50 s (the unit of MoveSpeed).
+float TimeStep();
 
 // Player
 float &PedHealth(void *ped);
@@ -50,6 +52,11 @@ void RepairVehicle(void *veh);
 void FlipVehicle(void *veh);
 float &VehicleHealth(void *veh);
 void SetVehicleInvulnerable(void *veh, bool on);
+// Unit vector the entity's nose points along.
+CVector Forward(void *entity);
+// CPhysical velocities, in game units per 1/50 s.
+CVector &MoveSpeed(void *entity);
+CVector &TurnSpeed(void *entity);
 
 // Teleport
 CVector PlayerPosition();

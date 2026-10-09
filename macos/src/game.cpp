@@ -23,6 +23,9 @@ constexpr size_t EntityMatrix = 0x08; // CMatrix: right 0x00, forward 0x10, up 0
 constexpr size_t EntityPos = EntityMatrix + 0x30;
 constexpr size_t EntityStatus = 0x60;
 
+constexpr size_t PhysicalMoveSpeed = 0x84;
+constexpr size_t PhysicalTurnSpeed = 0x90;
+
 constexpr size_t PedHealth = 0x44C;
 constexpr size_t PedArmour = 0x450;
 constexpr size_t PedWeapons = 0x550;
@@ -100,6 +103,9 @@ constexpr OffsetCheck kOffsetChecks[] = {
     {"_Z8SpawnCari", 0x140, 0x320e0129},                                                   // CVehicle flag set by SpawnCar
     {"_Z8SpawnCari", 0x25c, 0xb902da88},                                                   // CVehicle::m_nDoorLock
     {"_Z8SpawnCari", 0x244, 0x9278e929},                                                   // CEntity::m_status bits
+    {"_ZN9CPhysical14ApplyMoveSpeedEv", 0x14, 0xbd408c01},                                 // CPhysical::m_vecMoveSpeed.z
+    {"_ZN9CPhysical14ApplyMoveSpeedEv", 0x1c, 0xfc484002},                                 // CPhysical::m_vecMoveSpeed
+    {"_ZN9CPhysical14ApplyTurnSpeedEv", 0x30, 0xfd404a62},                                 // CPhysical::m_vecTurnSpeed
 };
 
 using TeleportFn = void (*)(void *entity, CVector pos);
@@ -154,6 +160,7 @@ struct Api
     uint8_t *ClockMinutes;
     short *ForcedWeatherType;
     float *TimeScale;
+    float *TimeStep;
     bool *UserPause;
     bool *CodePause;
     float *PedDensity;
@@ -257,6 +264,7 @@ bool Init(std::string &error)
     Resolve(api.ClockMinutes, "_ZN6CClock20ms_nGameClockMinutesE", missing);
     Resolve(api.ForcedWeatherType, "_ZN8CWeather17ForcedWeatherTypeE", missing);
     Resolve(api.TimeScale, "_ZN6CTimer13ms_fTimeScaleE", missing);
+    Resolve(api.TimeStep, "_ZN6CTimer12ms_fTimeStepE", missing);
     Resolve(api.UserPause, "_ZN6CTimer11m_UserPauseE", missing);
     Resolve(api.CodePause, "_ZN6CTimer11m_CodePauseE", missing);
     Resolve(api.PedDensity, "_ZN11CPopulation20PedDensityMultiplierE", missing);
@@ -309,6 +317,11 @@ void *PlayerVehicle()
 bool IsGamePaused()
 {
     return *api.UserPause || *api.CodePause;
+}
+
+float TimeStep()
+{
+    return *api.TimeStep;
 }
 
 float &PedHealth(void *ped)
@@ -489,6 +502,21 @@ float &VehicleHealth(void *veh)
 void SetVehicleInvulnerable(void *veh, bool on)
 {
     SetVehicleFlag(veh, off::VehFlagCanBeDamaged, !on);
+}
+
+CVector Forward(void *entity)
+{
+    return Field<CVector>(entity, off::EntityMatrix + 0x10);
+}
+
+CVector &MoveSpeed(void *entity)
+{
+    return Field<CVector>(entity, off::PhysicalMoveSpeed);
+}
+
+CVector &TurnSpeed(void *entity)
+{
+    return Field<CVector>(entity, off::PhysicalTurnSpeed);
 }
 
 CVector PlayerPosition()

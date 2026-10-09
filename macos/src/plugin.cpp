@@ -123,6 +123,9 @@ void OnKey(GLFWwindow *window, int key, int scancode, int action, int mods)
     if (key == GLFW_KEY_LEFT_CONTROL)
         leftCtrlDown = action != GLFW_RELEASE;
 
+    if (action == GLFW_RELEASE)
+        trainer::OnKey(key, false);
+
     if (key == GLFW_KEY_T && action == GLFW_PRESS && leftCtrlDown)
     {
         ToggleMenu();
@@ -140,6 +143,8 @@ void OnKey(GLFWwindow *window, int key, int scancode, int action, int mods)
             gameKeyCallback(window, key, scancode, action, mods);
         return;
     }
+    if (action == GLFW_PRESS)
+        trainer::OnKey(key, true);
     if (gameKeyCallback)
         gameKeyCallback(window, key, scancode, action, mods);
 }
