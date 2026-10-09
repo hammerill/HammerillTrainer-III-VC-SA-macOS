@@ -1688,3 +1688,6 @@ tools/myenv/Scripts/activate.bat
 tools/myenv/Scripts/Activate.ps1
 tools/myenv/Scripts/deactivate.bat
 tools/myenv/share/man/man1/ttx.1
+
+# macOS plugin build output
+build/

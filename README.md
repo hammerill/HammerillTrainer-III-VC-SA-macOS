@@ -149,6 +149,52 @@ If you have those mentioned versions installed,
 
 Check out the [Compatibility List](https://docs.google.com/document/d/1BrDlFQ_w25AOx8mMJe0PQkuOpJL4LezXMS6TlUpS5XU/edit?usp=sharing)
 
+## macOS (GTA Vice City) — Hammerill Trainer
+Hammerill Trainer is a standalone trainer for the macOS build of GTA Vice City (the unofficial **reVC** recompilation for Apple Silicon, `GTA Vice City.app`). It's a single plugin file. You **don't** need an ASI loader, DirectX, d3d8to9, SilentPatch or any other mod; the data files from `resource/GrinchTrainerVC` are built into the plugin. It's based on Grinch Trainer by Grinch_ and uses its data files and font.
+
+**Requirements**
+- A Mac with Apple Silicon (M1 or later), and GTA Vice City for macOS installed, normally at `/Applications/GTA Vice City.app`. When the app is set up correctly, `Contents/MacOS` contains a `reVC` launcher script and a `macosx-arm64-librw_gl3_glfw-oal` executable.
+- Xcode Command Line Tools (`xcode-select --install`) and CMake (`brew install cmake`) to build the plugin.
+
+**Build**
+
+Run these commands in the repository folder:
+```sh
+cmake -S macos -B build
+cmake --build build
+```
+This downloads Dear ImGui and the GLFW headers (pinned versions with checked hashes) and produces `build/HammerillTrainerVC.dylib`. If the game is somewhere other than `/Applications`, add `-DGTAVC_APP="/path/to/GTA Vice City.app"` to the first command.
+
+**Install**
+```sh
+./macos/install.sh
+```
+The script does two things:
+1. It copies `HammerillTrainerVC.dylib` into `GTA Vice City.app/Contents/Frameworks/`.
+2. It edits the game's launcher script `Contents/MacOS/reVC` so the game loads the plugin at startup, and saves the original script as `reVC.hammerilltrainer-backup`.
+
+If you installed the game somewhere else, pass both paths: `./macos/install.sh build/HammerillTrainerVC.dylib "/path/to/GTA Vice City.app"`. After rebuilding, run the script again to update the plugin.
+
+Then start the game as usual (Finder, Launchpad or Dock). Load or start a game and press <kbd>Left Ctrl</kbd> + <kbd>T</kbd> to open or close the trainer. On a gamepad, press X + A (Xbox) or Square + Cross (PlayStation). <kbd>Esc</kbd> also closes it. While the trainer is open, the game ignores your mouse, keyboard and gamepad.
+
+**Uninstall**
+```sh
+./macos/uninstall.sh
+```
+This restores the original launcher and deletes the plugin. Your saves are not affected.
+
+**Features:** god mode, never wanted, infinite ammo and sprint, health, armour, money and wanted level, give any weapon, spawn any vehicle (optionally with you inside), repair and flip your vehicle, vehicle god mode, teleport (map marker, coordinates or the location list), time, weather, game speed, ped and traffic density, HUD toggle, and every built-in cheat.
+
+**Customising lists:** to replace a built-in list, put your own `vehicles.toml`, `weapons.toml` or `locations.toml` (same format as `resource/GrinchTrainerVC/data`) in a `HammerillTrainerVC` folder inside `GTA Vice City.app/Contents/Resources/`.
+
+**Troubleshooting:** the plugin writes `HammerillTrainerVC.log` to `GTA Vice City.app/Contents/Resources/`. The plugin was built for one specific reVC build, so it checks the game's memory layout at startup. With a different build, the trainer window explains that the game version isn't supported and stays disabled, so it can't corrupt the game. If the game doesn't start, run `./macos/uninstall.sh` and report the problem with the log attached.
+
+<details>
+<summary>How it works</summary>
+
+The game is ad-hoc signed without the hardened runtime. As a result, `DYLD_INSERT_LIBRARIES`, set by the launcher script, can load the plugin. The plugin uses dyld interposing on the GLFW functions the game imports. It draws the menu (Dear ImGui) in `glfwSwapBuffers` and filters input through the GLFW callbacks and polling functions. It never patches game code. It finds game functions by their exported symbols (reVC ships with them). It reads struct field offsets from the game's own instructions, and `macos/src/game.cpp` re-checks each offset at startup.
+</details>
+
 ## Images
 <details>
   <summary>Show Images</summary>
